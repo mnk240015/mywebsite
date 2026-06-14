@@ -1,23 +1,28 @@
 name: Fetch Members Tweets
 on:
   schedule:
-    - cron: '*/20 * * * *' # 💡 20分に1回自動実行（1時間に3回）
-  workflow_dispatch: # 管理画面から手動で即時実行できるボタン
+    - cron: '*/20 * * * *' # 20分に1回自動実行
+  workflow_dispatch: # 手動実行ボタン
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # 明日以降のシステム強制変更に今すぐ適応
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Fetch and Filter Tweets
         run: |
-          # 💡 ここにメンバーを追加していきます（"ページ名:Xユーザー名"）
+          # 💡 メンバーリスト ("ページ名:Xユーザー名")
           MEMBERS=(
-            "ksan:tamakiyuichiro"
-            "l-san:Asano__Satoshi"
-            "m-san:kasai_koichi"
+            "k-san:k_san_xyz"
           )
 
           mkdir -p data
@@ -25,9 +30,25 @@ jobs:
             PAGE_ID="${member%%:*}"
             X_USER="${member##*:}"
             
-            # 軽量な中継サービス(nitter/pub-rss等)からRSSを取得し、JSONデータとして整形保存
-            # リプライ（@始まり）とリツイート（RT始まり）を自動的に除外します
-            curl -sL "https://pub-rss.net/user/${X_USER}.xml" | grep -vE "<title>(@|RT )" | head -n 40 > "data/${PAGE_ID}.json"
+            # Xの生データを変換し、リプライ(@付き)とリツイート(RT)を厳格に除外するJavaScriptを実行
+            node -e "
+            fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pub-rss.net/user/${X_USER}.xml')
+              .then(res => res.json())
+              .then(data => {
+                if(!data.items) return;
+                const filtered = data.items
+                  .filter(item => {
+                    const text = item.title || '';
+                    return !text.startsWith('@') && !text.startsWith('RT ');
+                  })
+                  .map(item => ({
+                    date: new Date(item.pubDate).toLocaleDateString('ja-JP'),
+                    text: item.content || item.description
+                  }))
+                  .slice(0, 20);
+                require('fs').writeFileSync('data/${PAGE_ID}.json', JSON.stringify(filtered, null, 2));
+              }).catch(err => process.exit(0));
+            "
           done
 
       - name: Commit and Push
@@ -35,5 +56,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json
-          git commit -m "Update tweets data" || exit 0
+          git commit -m "Update tweets data securely" || exit 0
           git push
