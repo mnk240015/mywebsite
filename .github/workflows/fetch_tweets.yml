@@ -1,0 +1,39 @@
+name: Fetch Members Tweets
+on:
+  schedule:
+    - cron: '*/20 * * * *' # 💡 20分に1回自動実行（1時間に3回）
+  workflow_dispatch: # 管理画面から手動で即時実行できるボタン
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch and Filter Tweets
+        run: |
+          # 💡 ここにメンバーを追加していきます（"ページ名:Xユーザー名"）
+          MEMBERS=(
+            "k-san:k_san_xyz"
+            "l-san:l_san_abc"
+            "m-san:m_san_123"
+          )
+
+          mkdir -p data
+          for member in "${MEMBERS[@]}"; do
+            PAGE_ID="${member%%:*}"
+            X_USER="${member##*:}"
+            
+            # 軽量な中継サービス(nitter/pub-rss等)からRSSを取得し、JSONデータとして整形保存
+            # リプライ（@始まり）とリツイート（RT始まり）を自動的に除外します
+            curl -sL "https://pub-rss.net/user/${X_USER}.xml" | grep -vE "<title>(@|RT )" | head -n 40 > "data/${PAGE_ID}.json"
+          done
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          git commit -m "Update tweets data" || exit 0
+          git push
