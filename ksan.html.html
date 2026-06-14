@@ -2,44 +2,65 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>kさんのツイート</title>
+    <title>k-san Timeline</title>
+    <style>
+        /* 💡 表示領域のスタイル調整 */
+        .x-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 600px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
-    <h1>さんのツイート</h1>
-    <p><a href="team-a.html">← aチームへ戻る</a></p>
-    
-<div id="tweet-list">タイムラインを読み込み中...</div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // ステップ1で自動生成されたデータファイルのURL
-    const dataUrl = './data/ksan.json'; 
+    <div class="x-container">
+        <a class="twitter-timeline" 
+           href="https://twitter.com/k_san_xyz?ref_src=twsrc%5Etfw"
+           data-chrome="noheader nofooter noborders" 
+           data-tweet-limit="20">
+           タイムラインを読み込み中...
+        </a>
+    </div>
 
-    fetch(dataUrl)
-        .then(response => {
-            if (!response.ok) throw new Error('データが存在しません');
-            return response.json();
-        })
-        .then(tweets => {
-            let html = '<ul style="list-style:none; padding:0; max-height:500px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:6px;">';
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+    <script>
+    window.twttr = (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0], t = window.twttr || {};
+        if (d.getElementById(id)) return t;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://platform.twitter.com/widgets.js";
+        fjs.parentNode.insertBefore(js, fjs);
+        t._e = []; t.ready = function(f) { t._e.push(f); };
+        return t;
+    }(document, "script", "twitter-wjs"));
+
+    // 埋め込み完了時にリプライとRTを非表示にする
+    twttr.ready(function (twttr) {
+        twttr.events.bind('rendered', function (event) {
+            const iframe = event.target;
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             
-            // 最大20件を表示
-            tweets.slice(0, 20).forEach(tweet => {
-                html += `
-                    <li style="margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #f5f5f5;">
-                        <small style="color:#888;">${tweet.date}</small>
-                        <div style="margin-top:4px;">${tweet.text}</div>
-                    </li>
-                `;
-            });
-            html += '</ul>';
-            document.getElementById('tweet-list').innerHTML = html;
-        })
-        .catch(err => {
-            document.getElementById('tweet-list').innerHTML = '現在タイムラインを表示できません。';
+            // Xの埋め込み内のタイムライン要素を監視・操作
+            const filterTweets = () => {
+                const tweets = iframeDoc.querySelectorAll('article');
+                tweets.forEach(tweet => {
+                    const text = tweet.textContent || "";
+                    // リプライ（返信先）または リツイート（がリツイート）の文字があれば非表示
+                    if (text.includes("返信先:") || text.includes("がリツイート")) {
+                        tweet.style.display = 'none';
+                    }
+                });
+            };
+
+            // 読み込み時とスクロール時に実行
+            filterTweets();
+            iframeDoc.addEventListener('scroll', filterTweets);
         });
-});
-</script>
+    });
+    </script>
 
 </body>
 </html>
