@@ -15,9 +15,9 @@ jobs:
         run: |
           # 💡 ここにメンバーを追加していきます（"ページ名:Xユーザー名"）
           MEMBERS=(
-            "k-san:k_san_xyz"
-            "l-san:l_san_abc"
-            "m-san:m_san_123"
+            "k-san:tamakiyuichiro"
+            "l-san:Asano__Satoshi"
+            "m-san:kasai_koichi"
           )
 
           mkdir -p data
