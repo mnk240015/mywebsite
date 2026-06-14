@@ -1,0 +1,54 @@
+name: Fetch Members Tweets From Yahoo
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Fetch from Yahoo Realtime
+        run: |
+          MEMBERS=(
+            "k-san:Asano__Satoshi"
+          )
+
+          mkdir -p data
+          for member in "${MEMBERS[@]}"; do
+            PAGE_ID="${member%%:*}"
+            X_USER="${member##*:}"
+            
+            # Yahoo!リアルタイム検索のRSSから「本人の投稿」を取得してJSONに変換
+            node -e "
+            const rssUrl = encodeURIComponent('https://search.yahoo.co.jp/realtime/search?p=from:' + '${X_USER}' + '&m=rss');
+            fetch('https://api.rss2json.com/v1/api.json?rss_url=' + rssUrl)
+              .then(res => res.json())
+              .then(data => {
+                if(!data.items) return;
+                const filtered = data.items.map(item => ({
+                  date: new Date(item.pubDate).toLocaleDateString('ja-JP'),
+                  text: item.description || item.title
+                })).slice(0, 20);
+                require('fs').writeFileSync('data/${PAGE_ID}.json', JSON.stringify(filtered, null, 2));
+              }).catch(err => process.exit(0));
+            "
+          done
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          git commit -m "Update tweets via Yahoo" || exit 0
+          git push
