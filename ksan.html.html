@@ -7,57 +7,36 @@
 <body>
     <h1>さんのツイート</h1>
     <p><a href="team-a.html">← aチームへ戻る</a></p>
-<div id="x-timeline" data-user="murata_kyonkyon">タイムラインを読み込み中...</div>
+    
+<div id="tweet-list">タイムラインを読み込み中...</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const container = document.getElementById('x-timeline');
-    const xUser = container.getAttribute('data-user');
-    
-    // 1. Xの投稿をRSS(XML)に無料変換する一般公開ゲートウェイを利用
-    // ※ 2026年現在、安定稼働している「nitter」などのRSSフィードを中継します
-    const rssUrl = `https://nitter.net/${xUser}/rss`;
-    
-    // XMLをJavaScriptで扱いやすいJSONに変換する無料API（RSS2JSON）を経由
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=50`;
+    // ステップ1で自動生成されたデータファイルのURL
+    const dataUrl = './data/k-san.json'; 
 
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status !== 'ok') throw new Error('読み込み失敗');
+    fetch(dataUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('データが存在しません');
+            return response.json();
+        })
+        .then(tweets => {
+            let html = '<ul style="list-style:none; padding:0; max-height:500px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:6px;">';
             
-            let html = '<ul style="list-style:none; padding:0; max-height:600px; overflow-y:auto; border:1px solid #ddd; padding:15px; border-radius:8px;">';
-            let count = 0;
-
-            data.items.forEach(item => {
-                // 最新20件に達したら終了
-                if (count >= 20) return;
-
-                const content = item.content || item.description;
-                const title = item.title;
-
-                // 2. リプライ（先頭が@）とリツイート（RT @ や Nitterの回送判定）を除外
-                const isReply = title.startsWith('@') || content.trim().startsWith('@');
-                const isRT = title.startsWith('RT ') || title.includes('retweeted');
-
-                if (!isReply && !isRT) {
-                    const date = new Date(item.pubDate).toLocaleDateString('ja-JP');
-                    html += `
-                        <li style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
-                            <small style="color:#666;">${date}</small>
-                            <div style="margin-top:5px; line-height:1.5;">${content}</div>
-                        </li>
-                    `;
-                    count++;
-                }
+            // 最大20件を表示
+            tweets.slice(0, 20).forEach(tweet => {
+                html += `
+                    <li style="margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #f5f5f5;">
+                        <small style="color:#888;">${tweet.date}</small>
+                        <div style="margin-top:4px;">${tweet.text}</div>
+                    </li>
+                `;
             });
-
             html += '</ul>';
-            container.innerHTML = count > 0 ? html : '表示できるツイートがありません。';
+            document.getElementById('tweet-list').innerHTML = html;
         })
         .catch(err => {
-            container.innerHTML = '現在タイムラインを読み込めません。';
-            console.error(err);
+            document.getElementById('tweet-list').innerHTML = '現在タイムラインを表示できません。';
         });
 });
 </script>
