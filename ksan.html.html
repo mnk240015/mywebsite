@@ -4,63 +4,27 @@
     <meta charset="UTF-8">
     <title>k-san Timeline</title>
     <style>
-        /* 💡 表示領域のスタイル調整 */
-        .x-container {
+        /* 画面の中央に読みやすい幅で表示します */
+        .timeline-wrapper {
             max-width: 500px;
-            margin: 0 auto;
-            height: 600px;
-            overflow-y: auto;
+            margin: 20px auto;
+            padding: 0 10px;
         }
     </style>
 </head>
 <body>
 
-    <div class="x-container">
+    <div class="timeline-wrapper">
+        <!-- 💡 以下の「k_san_xyz」の部分を、実際のXのユーザー名（@の後ろの英数字）に書き換えてください -->
         <a class="twitter-timeline" 
            href="https://twitter.com/k_san_xyz?ref_src=twsrc%5Etfw"
-           data-chrome="noheader nofooter noborders" 
-           data-tweet-limit="20">
+           data-height="600">
            タイムラインを読み込み中...
         </a>
     </div>
 
+    <!-- X公式の表示システムを読み込みます（これがないとただのリンクになります） -->
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-    <script>
-    window.twttr = (function(d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0], t = window.twttr || {};
-        if (d.getElementById(id)) return t;
-        js = d.createElement(s); js.id = id;
-        js.src = "https://platform.twitter.com/widgets.js";
-        fjs.parentNode.insertBefore(js, fjs);
-        t._e = []; t.ready = function(f) { t._e.push(f); };
-        return t;
-    }(document, "script", "twitter-wjs"));
-
-    // 埋め込み完了時にリプライとRTを非表示にする
-    twttr.ready(function (twttr) {
-        twttr.events.bind('rendered', function (event) {
-            const iframe = event.target;
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            
-            // Xの埋め込み内のタイムライン要素を監視・操作
-            const filterTweets = () => {
-                const tweets = iframeDoc.querySelectorAll('article');
-                tweets.forEach(tweet => {
-                    const text = tweet.textContent || "";
-                    // リプライ（返信先）または リツイート（がリツイート）の文字があれば非表示
-                    if (text.includes("返信先:") || text.includes("がリツイート")) {
-                        tweet.style.display = 'none';
-                    }
-                });
-            };
-
-            // 読み込み時とスクロール時に実行
-            filterTweets();
-            iframeDoc.addEventListener('scroll', filterTweets);
-        });
-    });
-    </script>
 
 </body>
 </html>
