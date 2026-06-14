@@ -15,7 +15,7 @@ jobs:
         run: |
           # 💡 ここにメンバーを追加していきます（"ページ名:Xユーザー名"）
           MEMBERS=(
-            "k-san:tamakiyuichiro"
+            "ksan:tamakiyuichiro"
             "l-san:Asano__Satoshi"
             "m-san:kasai_koichi"
           )
