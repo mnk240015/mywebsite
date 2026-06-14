@@ -1,14 +1,14 @@
 name: Fetch Members Tweets
 on:
   schedule:
-    - cron: '*/20 * * * *' # 20分に1回自動実行
-  workflow_dispatch: # 手動実行ボタン
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # 明日以降のシステム強制変更に今すぐ適応
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,7 +20,6 @@ jobs:
 
       - name: Fetch and Filter Tweets
         run: |
-          # 💡 メンバーリスト ("ページ名:Xユーザー名")
           MEMBERS=(
             "k-san:k_san_xyz"
           )
@@ -30,20 +29,24 @@ jobs:
             PAGE_ID="${member%%:*}"
             X_USER="${member##*:}"
             
-            # Xの生データを変換し、リプライ(@付き)とリツイート(RT)を厳格に除外するJavaScriptを実行
+            # 💡 外部サイトを経由せず、GitHubから直接Xのパブリックデータを安全に取得します
             node -e "
-            fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pub-rss.net/user/${X_USER}.xml')
+            fetch('https://syndication.twitter.com/srv/timeline-profile/screen-name/' + '${X_USER}')
               .then(res => res.json())
               .then(data => {
-                if(!data.items) return;
-                const filtered = data.items
-                  .filter(item => {
-                    const text = item.title || '';
-                    return !text.startsWith('@') && !text.startsWith('RT ');
+                if(!data.entries) return;
+                const filtered = data.entries
+                  .map(entry => entry.content.tweet)
+                  .filter(tweet => {
+                    if(!tweet) return false;
+                    // リプライ（@始まり）とリツイートを除外
+                    const isReply = tweet.text.startsWith('@') || tweet.in_reply_to_status_id_str !== null;
+                    const isRT = tweet.retweeted_status_result !== undefined;
+                    return !isReply && !isRT;
                   })
-                  .map(item => ({
-                    date: new Date(item.pubDate).toLocaleDateString('ja-JP'),
-                    text: item.content || item.description
+                  .map(tweet => ({
+                    date: new Date(tweet.created_at).toLocaleDateString('ja-JP'),
+                    text: tweet.text
                   }))
                   .slice(0, 20);
                 require('fs').writeFileSync('data/${PAGE_ID}.json', JSON.stringify(filtered, null, 2));
@@ -56,5 +59,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json
-          git commit -m "Update tweets data securely" || exit 0
+          git commit -m "Update tweets from X directly" || exit 0
           git push
