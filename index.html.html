@@ -2,13 +2,67 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ホーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>特定アカウント ツイート保存アーカイブ</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; background-color: #f8f9fa; }
+        h1 { text-align: center; color: #0f1419; }
+        .update-time { text-align: center; color: #536471; font-size: 0.9em; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #0f1419; color: white; font-weight: bold; }
+        tr:hover { background-color: #f7f7f7; }
+        a { color: #1d9bf0; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
 <body>
-    <h1>ホーム</h1>
-    <ul>
-        <li><a href="group-a.html">Aグループ を見る</a></li>
-        <li><a href="group-b.html">Bグループ を見る</a></li>
-    </ul>
+
+    <h1>ツイート自動収集ログ</h1>
+    <div class="update-time" id="loading-text">データを読み込み中...</div>
+    
+    <table id="tweet-table" style="display: none;">
+        <thead>
+            <tr>
+                <th style="width: 20%;">投稿日時</th>
+                <th style="width: 65%;">ツイート本文</th>
+                <th style="width: 15%;">リンク</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+
+    <script>
+        fetch('tweets_data.csv')
+            .then(response => {
+                if (!response.ok) throw new Error('CSVファイルがまだありません。自動実行を待つか、手動実行してください。');
+                return response.text();
+            })
+            .then(csvText => {
+                const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                const tbody = document.getElementById('table-body');
+                
+                // 新しいツイートが上に来るように逆順で表示
+                results.data.reverse().forEach(row => {
+                    if (!row.tweet_url) return;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.created_at || '不明'}</td>
+                        <td>${row.text || ''}</td>
+                        <td><a href="${row.tweet_url}" target="_blank">元ツイート</a></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                document.getElementById('loading-text').innerText = `蓄積されたツイート（全 ${results.data.length} 件）`;
+                document.getElementById('tweet-table').style.display = 'table';
+            })
+            .catch(error => {
+                document.getElementById('loading-text').innerText = error.message;
+            });
+    </script>
 </body>
 </html>
