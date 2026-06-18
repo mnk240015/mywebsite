@@ -1,0 +1,31 @@
+name: Auto Scrape Yahoo Realtime
+
+on:
+  schedule:
+    - cron: '0 */3 * * *' # 3時間ごとに自動実行
+  workflow_dispatch: # 手動実行ボタンも有効化
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+    - name: リポジトリのチェックアウト
+      uses: actions/checkout@v4
+
+    - name: Pythonのセットアップ
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: ライブラリのインストール
+      run: pip install requests beautifulsoup4 pandas
+
+    - name: スクリプトの実行
+      run: python scraper.py
+
+    - name: 差分があればGitHubにプッシュ
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add tweets_data.csv
+        git diff --cached --quiet || (git commit -m "Update tweets data" && git push)
