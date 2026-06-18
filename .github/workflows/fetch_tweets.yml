@@ -21,7 +21,7 @@ jobs:
       - name: Fetch and Merge Tweets
         run: |
           MEMBERS=(
-            "k-san:k_san_xyz"
+            "k-san:tamakiyuichiro"
           )
 
           mkdir -p data
